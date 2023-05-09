@@ -1,15 +1,23 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
+from flask_cors import CORS
 import pandas as pd
 from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 
 app = Flask(__name__, template_folder='templates')
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 @app.route('/')
 def index():
   return render_template("index.html")
+
+
+@app.route('/get_recent_data')
+def get_recent_data():
+    df = pd.read_csv('Data/data.csv', names=["Timestamp", "Temperature", "Humidity"], delimiter=',')
+    return jsonify(df.iloc[-10:].values.tolist()), 200
 
 
 @app.route('/predict_weather')
