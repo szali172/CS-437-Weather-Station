@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 import numpy as np
 import csv
@@ -16,7 +16,7 @@ def index():
 @app.route('/get_recent_data')
 def get_recent_data():
     data = []
-    with open('Data/data.csv', 'r') as file:
+    with open('data/data.csv', 'r') as file:
         reader = csv.reader(file)
         for row in reader:
             data.append(row)
@@ -28,7 +28,7 @@ def get_recent_data():
 @app.route('/predict_weather')
 def predict_weather():
     data = []
-    with open('Data/data.csv', 'r') as file:
+    with open('data/data.csv', 'r') as file:
         reader = csv.reader(file)
         for row in reader:
             timestamp = datetime.strptime(row[0], '%Y-%m-%d %H:%M:%S.%f')
@@ -47,6 +47,21 @@ def predict_weather():
     return {"temp": next_day_temperature[0]}, 200
 
 
+@app.route('/post_data', methods=['POST'])
+def post_data():
+    try:
+        with open('data/data.csv', 'a') as f:
+            writer = csv.writer(f)
+            
+            ts, temp, humidity = request,get_json()
+            
+            row = [ts, temp, humidity]
+
+            # write a row to the csv file
+            writer.writerow(row)
+        return "Server has written to csv successfully", 200
+    except:
+        return "Server failed to write data to csv", 500
 
 if __name__ == "__main__":
     app.run(debug=True)
