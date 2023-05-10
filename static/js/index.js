@@ -1,5 +1,5 @@
 anychart.onDocumentReady(function () {
-  
+
   setInterval(function() {
     const request = new Request("http://127.0.0.1:5000/get_recent_data");
 
@@ -20,7 +20,28 @@ anychart.onDocumentReady(function () {
       console.error(error);
     });
 
-      
+
+    const weatherRequest = new Request("http://127.0.0.1:5000/predict_weather");
+
+    fetch(weatherRequest)
+      .then((response) => {
+        if (response.status === 200) {
+          return response.json();
+        } else {
+          throw new Error("Something went wrong on API server!");
+        }
+      })
+      .then((data) => {
+        console.log(data); 
+        const weatherElement = document.getElementById('weather');
+        if (weatherElement) {
+          weatherElement.textContent = `Predicted temperature: ${data.temp}`;
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+
 
     function loadData(data) {
       console.log(data);
@@ -29,6 +50,9 @@ anychart.onDocumentReady(function () {
       data.forEach(function(d) {
         d[0] = moment(d[0], 'YYYY-MM-DD HH:mm:ss.SSSSSS').format('M/D/YY h:mma');
       });
+
+      // clear the container
+      document.getElementById('container').innerHTML = '';
 
       // create a data set
       var dataSet = anychart.data.set(data); // use the last 10 rows of data

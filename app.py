@@ -1,13 +1,12 @@
 from flask import Flask, render_template, jsonify
 from flask_cors import CORS
-import pandas as pd
+import numpy as np
+import csv
 from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
 
 app = Flask(__name__, template_folder='templates')
 CORS(app, resources={r"/*": {"origins": "*"}})
-
 
 @app.route('/')
 def index():
@@ -16,35 +15,36 @@ def index():
 
 @app.route('/get_recent_data')
 def get_recent_data():
-    df = pd.read_csv('Data/data.csv', names=["Timestamp", "Temperature", "Humidity"], delimiter=',')
-    return jsonify(df.iloc[-10:].values.tolist()), 200
+    data = []
+    with open('Data/data.csv', 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            data.append(row)
+    data = data[-10:]
+    return jsonify(data), 200
+
 
 
 @app.route('/predict_weather')
 def predict_weather():
-  
-  # Parse data
-  df = pd.read_csv('Data/data.csv', names=["Timestamp", "Temperature", "Humidity"], delimiter=',')
-  df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
-  df['Year'] = df['Timestamp'].dt.year
-  df['Month'] = df['Timestamp'].dt.month
-  df['Day'] = df['Timestamp'].dt.day
-  
-  # Split dataset into training and testing
-  X = df[['Year', 'Month', 'Day']]
-  y = df['Temperature']
-  
-  # Train model
-  model = LinearRegression()
-  model.fit(X, y)
+    data = []
+    with open('Data/data.csv', 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            timestamp = datetime.strptime(row[0], '%Y-%m-%d %H:%M:%S.%f')
+            data.append([timestamp.year, timestamp.month, timestamp.day, float(row[1])])
+    data = np.array(data)
+    X = data[:, :3]
+    y = data[:, 3]
+    
+    model = LinearRegression()
+    model.fit(X, y)
 
-  # Predict temperature for next day
-  tomorrow: datetime = datetime.today() + timedelta(days=1)
-  tomorrow_df = pd.DataFrame({'Year': [tomorrow.year], 'Month': [tomorrow.month], 'Day': [tomorrow.day]})
-  next_day_temperature = model.predict(tomorrow_df)
+    tomorrow = datetime.today() + timedelta(days=1)
+    next_day_temperature = model.predict(np.array([[tomorrow.year, tomorrow.month, tomorrow.day]]))
   
-  print(f"The temperature for {tomorrow.strftime('%Y-%m-%d')} will be {next_day_temperature[0]}.")
-  return {"temp": next_day_temperature[0]}, 200
+    print(f"The temperature for {tomorrow.strftime('%Y-%m-%d')} will be {next_day_temperature[0]}.")
+    return {"temp": next_day_temperature[0]}, 200
 
 
 
